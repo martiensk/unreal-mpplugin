@@ -32,6 +32,15 @@ void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch)
 	{
 		MultiplayerSessionsSubsystem = GameInstance->GetSubsystem<UMultiplayerSessionsSubsystem>();
 	}
+
+	if(MultiplayerSessionsSubsystem)
+	{
+		MultiplayerSessionsSubsystem->MultiplayerOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
+		MultiplayerSessionsSubsystem->MultiplayerOnFindSessionComplete.AddUObject(this, &ThisClass::OnFindSession);
+		MultiplayerSessionsSubsystem->MultiplayerOnJoinSessionComplete.AddUObject(this, &ThisClass::OnJoinSession);
+		MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.AddDynamic(this, &ThisClass::OnDestroySession);
+		MultiplayerSessionsSubsystem->MultiplayerOnStartSessionComplete.AddDynamic(this, &ThisClass::OnStartSession);
+	}
 }
 
 bool UMenu::Initialize()
@@ -57,28 +66,70 @@ void UMenu::OnLevelRemovedFromWorld(ULevel* InLevel, UWorld* InWorld)
 	Super::OnLevelRemovedFromWorld(InLevel, InWorld);
 }
 
-void UMenu::HostButtonClicked()
+void UMenu::OnCreateSession(bool bWasSuccessful)
 {
-	if(GEngine)
+	if(bWasSuccessful)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("Host button clicked.")));
-	}
-	if(MultiplayerSessionsSubsystem)
-	{
-		MultiplayerSessionsSubsystem->CreateSession(NumPublicConnections, MatchType);
+		if(GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("Session created successfully.")));
+		}
 		UWorld* World = GetWorld();
 		if(World)
 		{
 			World->ServerTravel("/Game/ThirdPerson/Maps/Lobby?listen");
 		}
 	}
+	else if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("Session creation failed.")));	
+	}
+}
+
+void UMenu::OnFindSession(const TArray<FOnlineSessionSearchResult>& SessionResults, bool bWasSuccessful)
+{
+	if(MultiplayerSessionsSubsystem == nullptr)
+	{
+		return;
+	}
+	for(auto Result:SessionResults)
+	{
+		FString SettingsValue;
+
+		Result.Session.SessionSettings.Get(FName("MatchType"), SettingsValue);
+		if(SettingsValue == "FreeForAll")
+		{
+			MultiplayerSessionsSubsystem->JoinSession(Result);
+			return;
+		}
+	}
+}
+
+void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
+{
+}
+
+void UMenu::OnDestroySession(bool bWasSuccessful)
+{
+}
+
+void UMenu::OnStartSession(bool bWasSuccessful)
+{
+}
+
+void UMenu::HostButtonClicked()
+{
+	if(MultiplayerSessionsSubsystem)
+	{
+		MultiplayerSessionsSubsystem->CreateSession(NumPublicConnections, MatchType);
+	}
 }
 
 void UMenu::JoinButtonClicked()
 {
-	if(GEngine)
+	if(MultiplayerSessionsSubsystem)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("Join Button clicked.")));
+		MultiplayerSessionsSubsystem->FindSessions(10000);
 	}
 }
 
