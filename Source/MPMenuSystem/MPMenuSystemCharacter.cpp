@@ -63,9 +63,9 @@ JoinSessionCompleteDelegate(FOnJoinSessionCompleteDelegate::CreateUObject(this, 
 	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
 	if (OnlineSubsystem) {
 		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
-		if (GEngine) {
-			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Blue, FString::Printf(TEXT("Found online susystme %s"), *OnlineSubsystem->GetSubsystemName().ToString()));
-		}
+		/*if (GEngine) {
+			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Blue, FString::Printf(TEXT("Found online subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString()));
+		}*/
 	}
 }
 
@@ -129,7 +129,6 @@ void AMPMenuSystemCharacter::JoinGameSession()
 	{
 		return;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("Finding Game Sessions")));
 
 	OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
 	
@@ -146,21 +145,10 @@ void AMPMenuSystemCharacter::OnCreateSessionComplete(FName SessionName, bool bWa
 {
 	if(bWasSuccessful)
 	{
-		if(GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("Created session %s"), *SessionName.ToString()));
-		}
 		UWorld* World = GetWorld();
 		if(World)
 		{
 			World->ServerTravel(FString("/Game/ThirdPerson/Maps/Lobby?listen"));
-		}
-	}
-	else
-	{
-		if(GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("Failed to create session")));
 		}
 	}
 }
@@ -172,14 +160,6 @@ void AMPMenuSystemCharacter::OnFindSessionComplete(bool bWasSuccessful)
 		return;
 	}
 	
-	if(GEngine )
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("Done searching for sessions")));
-		if(OnlineSessionSearch->SearchResults.Num() > 0)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("Could not find any sessions.")));	
-		}
-	}	
 	for(auto Result:OnlineSessionSearch->SearchResults)
 	{
 		FString Id = Result.GetSessionIdStr();
@@ -187,16 +167,8 @@ void AMPMenuSystemCharacter::OnFindSessionComplete(bool bWasSuccessful)
 		FString MatchType;
 
 		Result.Session.SessionSettings.Get(FName("MatchType"), MatchType);
-		if(GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Cyan, FString::Printf(TEXT("ID: %s, User %s"), *Id, *User));
-		}
 		if(MatchType == "FreeForAll")
 		{
-			if(GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Cyan, FString::Printf(TEXT("Joining match type %s"), *MatchType));
-			}
 			OnlineSessionInterface->AddOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegate);
 
 			const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
@@ -215,7 +187,6 @@ void AMPMenuSystemCharacter::OnJoinSessionComplete(FName SessionName, EOnJoinSes
 	FString Address;
 	if(OnlineSessionInterface->GetResolvedConnectString(NAME_GameSession, Address))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Connect string: %s"), *Address));
 		APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
 		if(PlayerController)
 		{
